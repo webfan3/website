@@ -1943,7 +1943,7 @@ if((
       
 /* die('Warning: Suspecious context! Solution: Just download this the right way from https://frdl.webfan.de/install/ or comment out line '.__LINE__.' of '.basename(__FILE__));  */
 	}
-    $MimeVM = $run(__FILE__, $_NotIsTemplateContext);
+    $MimeVM = $run(__FILE__, true);
 }else{
 	 $MimeVM = $run(__FILE__, false);
 }
