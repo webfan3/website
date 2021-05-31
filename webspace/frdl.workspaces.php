@@ -2,7 +2,9 @@
 
 return [
 
-  'Frdlweb'=>[
+  'frdl'=>[
          'DIR'=>__DIR__.\DIRECTORY_SEPARATOR.'.frdl',
    ],
+
 ];
+

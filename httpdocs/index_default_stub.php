@@ -2112,7 +2112,9 @@ try{
  if(!file_exists($af) || filemtime($af) < time() - $ccl){
    file_put_contents($af, file_get_contents($l));	
  }
-         !\class_exists(\frdl\implementation\psr4\RemoteAutoloader::class) && require $af;	
+         if(!\class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
+                 require $af;
+         }	
 		
 		
    $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($s,
@@ -2128,7 +2130,7 @@ try{
  																				 
  '03.webfan.de',
  4,			   
- 'https://03.webfan.de/install/?salt='.sha1(mt_rand(1000,9999)).'&source=\frdl\implementation\psr4\RemoteAutoloader',
+ 'https://cdn.frdl.io/@webfan3/stubs-and-fixtures/classes/frdl/implementation/psr4/RemoteAutoloader',
  24 * 60 * 60,
  24 * 60 * 60
 );
@@ -2143,7 +2145,7 @@ if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\
 
  if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
    $this->addClassfile(\frdl\implementation\psr4\RemoteAutoloader::class, 
-					  file_get_contents('https://03.webfan.de/install/?salt='.\sha1(mt_rand(1,999)).'&source=frdl\implementation\psr4\RemoteAutoloader'));
+					  file_get_contents('https://cdn.frdl.io/@webfan3/stubs-and-fixtures/classes/frdl/implementation/psr4/RemoteAutoloader'));
  }
 
 
@@ -2165,18 +2167,18 @@ Content-Disposition: php ;filename="$HOME/apc_config.php";name="stub apc_config.
 
 	
 return [
-  'workspace' => 'zoneadmin-.@domain_name@',
+  'workspace' => '@domain_name@',
   'baseUrl' => 'https://@domain_name@',
-  'baseUrlInstaller' => 'https://my.webfan.website/edit/zoneadmin-/@domain_name@/',
+  'baseUrlInstaller' => 'https://frdl.ws/frdlwebuserworkspace/@domain_name@/',
   'ADMIN_EMAIL' => 'admin@@domain_name@',
   'ADMIN_EMAIL_CONFIRMED' =>false,
   'NODE_PATH' => '/opt/plesk/node/12/bin/node',
   'wsdir' => dirname(__DIR__).'/.frdl/',
   'NPM_PATH' => '/opt/plesk/node/12/bin/npm',
-  'autoupdate' => false,
+  'autoupdate' => true,
   'CACHE_ASSETS_HTTP' => true,
   'installed_from_hps_blog_id' => null,
-  'stub' => get_class($this),
+  'stub' => null,
 ];	
 
 
