@@ -3,14 +3,14 @@
   "version": "0.0.0",
   "description": "Frdlweb webfan.website vHost Template/BuildingTools",
   "author": "Frdlweb <software@frdl.de>",
-  "homepage": "https://github.com/frdl/webfan-website",
+  "homepage": "https://github.com/webfan3/website",
    "workspaces": [
      ".frdl",
     "./packages/*",
     "builder"
   ],
   "bugs": {
-    "url": "https://github.com/frdl/webfan-website/issues"
+    "url": "https://github.com/webfan3/website/issues"
   },
   "scripts": {
     "analyze": "mrbuilder",
@@ -37,7 +37,8 @@
     "url": "https://github.com/webfan3/website.git",
     "directory" :"webspace"
   },
-  "dependencies": {    
+  "dependencies": {   
+    "webpack-require-from": "^1.8.5",
     "degit":"^2.8.4",
     "reverse-proxy" : "latest",
     "npm-install-webpack-plugin" : "^4.0.5",
