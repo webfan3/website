@@ -29,11 +29,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/frdl/webfan-website.git"
+    "url": "https://github.com/webfan3/website.git",
+    "directory" :"webspace"
   },
   "dependencies": {    
     "degit":"^2.8.4",
-    "reverse-proxy",
+    "reverse-proxy" : "latest",
     "npm-install-webpack-plugin" : "^4.0.5",
     "parcel-bundler": "^1.11.0"
   },
