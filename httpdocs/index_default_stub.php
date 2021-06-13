@@ -1818,7 +1818,7 @@ $_homeg = str_replace(\DIRECTORY_SEPARATOR, '/', getenv('FRDL_HOME'));
 	
 $_cwd = getcwd(); 	
 
-chdir(getenv('FRDL_HOME'));
+//chdir(getenv('FRDL_HOME'));
 	
 	
 $workspaces = false;
@@ -1828,8 +1828,9 @@ $_dir = getenv('FRDL_HOME') . \DIRECTORY_SEPARATOR . '.frdl';
  $g = (file_exists("frdl.workspaces.php")) ? [realpath("frdl.workspaces.php")] : glob("frdl.workspaces.php");	
  if(0===count($g)){
 	 $g = array_merge(glob(str_replace(\DIRECTORY_SEPARATOR, '/', getcwd())."/frdl.workspaces.php"),
-					  glob($_homeg."/frdl.workspaces.php"), glob($_homeg."/*/frdl.workspaces.php"), 
-					  glob($_homeg."/*/*/frdl.workspaces.php"));
+					  glob($_homeg."/frdl.workspaces.php"), glob($_homeg."/*/frdl.workspaces.php") 
+					  //,glob($_homeg."/*/*/frdl.workspaces.php")
+			 );
  }
   if(0<count($g)){
 	//	$_dir = dirname($g[0]);	
@@ -2169,7 +2170,7 @@ Content-Disposition: php ;filename="$HOME/apc_config.php";name="stub apc_config.
 return [
   'workspace' => '@domain_name@',
   'baseUrl' => 'https://@domain_name@',
-  'baseUrlInstaller' => 'https://frdl.ws/frdlwebuserworkspace/@domain_name@/',
+  'baseUrlInstaller' => 'https://admin.webfan.de/setup/@domain_name@/',
   'ADMIN_EMAIL' => 'admin@@domain_name@',
   'ADMIN_EMAIL_CONFIRMED' =>false,
   'NODE_PATH' => '/opt/plesk/node/12/bin/node',
