@@ -2091,7 +2091,7 @@ try{
  $af = (is_string($cacheDir) && is_dir($cacheDir))
 	 ? rtrim($cacheDir, '\\/ ')
 	 .	 
-	 \DIRECTORY_SEPARATOR.str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloader::class).'.php'
+	 \DIRECTORY_SEPARATOR.str_replace('\\', \DIRECTORY_SEPARATOR, \Webfan\Autoloader\RemoteFallbackLoader::class).'.php'
 	 : \sys_get_temp_dir().\DIRECTORY_SEPARATOR
 				                     . \get_current_user()
 				                     .\DIRECTORY_SEPARATOR
@@ -2102,7 +2102,7 @@ try{
 			                         .'php'.\DIRECTORY_SEPARATOR
 			                         .'src'.\DIRECTORY_SEPARATOR
 			                         .'psr4'.\DIRECTORY_SEPARATOR
-		                              .str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloader::class).'.php';
+		                              .str_replace('\\', \DIRECTORY_SEPARATOR, \Webfan\Autoloader\RemoteFallbackLoader::class).'.php';
 	
 
  if(!is_dir(dirname($af))){
@@ -2113,12 +2113,12 @@ try{
  if(!file_exists($af) || filemtime($af) < time() - $ccl){
    file_put_contents($af, file_get_contents($l));	
  }
-         if(!\class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
+         if(!\class_exists(\Webfan\Autoloader\RemoteFallbackLoader::class)){
                  require $af;
          }	
 		
 		
-   $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($s,
+   $loader = \Webfan\Autoloader\RemoteFallbackLoader::getInstance($s,
 																	 true, 
 																	 '20210108DIREf',
 																	 false,
@@ -2131,7 +2131,7 @@ try{
  																				 
  '03.webfan.de',
  4,			   
- 'https://cdn.frdl.io/@webfan3/stubs-and-fixtures/classes/frdl/implementation/psr4/RemoteAutoloader',
+ 'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteFallbackLoader.php',
  24 * 60 * 60,
  24 * 60 * 60
 );
@@ -2142,17 +2142,17 @@ try{
 }
 
 
-if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\RemoteAutoloader){
+if(!is_object($loader) || true !== $loader instanceof \Webfan\Autoloader\RemoteFallbackLoader){
 
- if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
-   $this->addClassfile(\frdl\implementation\psr4\RemoteAutoloader::class, 
-					  file_get_contents('https://cdn.frdl.io/@webfan3/stubs-and-fixtures/classes/frdl/implementation/psr4/RemoteAutoloader'));
+ if(!class_exists(\Webfan\Autoloader\RemoteFallbackLoader::class)){
+   $this->addClassfile(\Webfan\Autoloader\RemoteFallbackLoader::class, 
+					  file_get_contents('https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteFallbackLoader.php'));
  }
 
 
  call_user_func(function($version,$workspace){
-   if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class))return;
-   $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($workspace, true, $version, true);
+   if(!class_exists(\Webfan\Autoloader\RemoteFallbackLoader::class))return;
+   $loader = \Webfan\Autoloader\RemoteFallbackLoader::class::getInstance($workspace, true, $version, true);
  }, $version, $workspace);
 
 }	 
