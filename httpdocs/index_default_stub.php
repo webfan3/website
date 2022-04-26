@@ -2127,9 +2127,8 @@ try{
 																	 $cacheDir/*null*/, 
 																	 $cl);	
    return $loader;
-},
- 																				 
- $workspace,
+}, 																				 
+ '03.webfan.de',
  4,			   
  'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloader.php',
  24 * 60 * 60,
