@@ -2152,7 +2152,7 @@ if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\
  call_user_func(function($version,$workspace){
    if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class))return;
    $loader = \frdl\implementation\psr4\RemoteAutoloader::class::getInstance($workspace, true, $version, true);
- }, $version, $workspace);
+ }, 'latest', '03.webfan.de');
 
 }	 
 	 
