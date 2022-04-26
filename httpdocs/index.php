@@ -11,7 +11,7 @@ if(false===$code || !file_put_contents(__FILE__, $code)){
 
 ignore_user_abort(true);
 header("Refresh:60; url=?start=1");
-header('Connection: close') ;
+//header('Connection: close') ;
 echo 'Updating, please wait...';
 flush();
 sleep(10);
