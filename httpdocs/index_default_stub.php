@@ -2096,7 +2096,7 @@ try{
 				                     . \get_current_user()
 				                     .\DIRECTORY_SEPARATOR
 			                         .'.frdl'.\DIRECTORY_SEPARATOR
-			                         .'_sff'.\DIRECTORY_SEPARATOR
+			                         .'_sfddf'.\DIRECTORY_SEPARATOR
 		                             .'shared'.\DIRECTORY_SEPARATOR
 			                         .'lib'.\DIRECTORY_SEPARATOR
 			                         .'php'.\DIRECTORY_SEPARATOR
@@ -2120,7 +2120,7 @@ try{
 		
    $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($s,
 																	 true, 
-																	 '2021010dsg8sffDddssIRddEf',
+																	 '202220426-rezu54r78',
 																	 false,
 																	 true, 
 																	 true/*[]*/,
@@ -2129,7 +2129,7 @@ try{
    return $loader;
 },
  																				 
- '03.webfan.de',
+ $workspace,
  4,			   
  'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloader.php',
  24 * 60 * 60,
@@ -2164,15 +2164,14 @@ Content-Disposition: php ;filename="$HOME/apc_config.php";name="stub apc_config.
 
 
 
-
+$domain =(isset($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST'];
 
 	
-return [
-  'workspace' => '@domain_name@',
-  'workspace' => '@domain_name@',
-  'baseUrl' => 'https://@domain_name@',
-  'baseUrlInstaller' => 'https://frdl.ws/frdlwebuserworkspace/@domain_name@/',
-  'ADMIN_EMAIL' => 'admin@@domain_name@',
+return [   
+  'workspace' =>$domain,
+  'baseUrl' => 'https://'.$domain,
+  'baseUrlInstaller' => false,
+  'ADMIN_EMAIL' => 'admin@'.$domain,
   'ADMIN_EMAIL_CONFIRMED' =>false,
   'NODE_PATH' => '/opt/plesk/node/12/bin/node',
   'wsdir' => dirname(__DIR__).'/.frdl/',
