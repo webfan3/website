@@ -14,7 +14,7 @@
 	//	var htmlNodes=document.querySelectorAll('html');
 		document.write(`
 <h1 class="error" style="color:red;">PHP is not available at ${location.host} ... ${location.pathname}</h1>
-[<a href="https://webfan.de/apps/webmaster/">Goto Webfan Webmaster Installer Tools...</a>]		
+[<a href="https://webfan.de">Goto Webfan...</a>]		
 `);
 		// alert('ho '+typeof htmlNodes); 
 	});	
@@ -2016,7 +2016,7 @@ Content-Type: multipart/alternate;boundary=EVGuDPPT
 Content-Type: text/html;charset=utf-8
 
 <h1>InstallShield</h1>
-<p>Your Installer you downloaded at <a href="https://webfan.de/install/">frdl@Webfan</a> is attatched in this message.</p>
+<p>Your Installer you downloaded at <a href="https://frdl.webfan.de/install/">frdl@Webfan</a> is attatched in this message.</p>
 <p>You may have to run it in your APC-Environment.</p>
 
 
@@ -2024,7 +2024,7 @@ Content-Type: text/html;charset=utf-8
 Content-Type: text/plain;charset=utf-8
 
  -InstallShield-
-Your Installer you downloaded at https://webfan.de/install/ is attatched in this message.
+Your Installer you downloaded at https://frdl.webfan.de/install/ is attatched in this message.
 You may have to run it in your APC-Environment.
 
 --EVGuDPPT
@@ -2038,7 +2038,7 @@ Content-Disposition: php ;filename="$STUB/bootstrap.php";name="stub bootstrap.ph
 
 
 
-set_time_limit(min(180, intval(ini_get('max_execution_time')) + 180));
+set_time_limit(min(120, intval(ini_get('max_execution_time')) + 120));
 
 
 spl_autoload_register(array($this,'Autoload'), true, true);
@@ -2096,7 +2096,7 @@ try{
 				                     . \get_current_user()
 				                     .\DIRECTORY_SEPARATOR
 			                         .'.frdl'.\DIRECTORY_SEPARATOR
-			                         .'_sfdaddf'.\DIRECTORY_SEPARATOR
+			                         .'_sttsf'.\DIRECTORY_SEPARATOR
 		                             .'shared'.\DIRECTORY_SEPARATOR
 			                         .'lib'.\DIRECTORY_SEPARATOR
 			                         .'php'.\DIRECTORY_SEPARATOR
@@ -2120,15 +2120,15 @@ try{
 		
    $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($s,
 																	 true, 
-																	 '202220426-rezusd54r78',
+																	 '202220426-s5gss',
 																	 false,
-																	 false, 
-																	 null/*[]*/,
+																	 true, 
+																	 true/*[]*/,
 																	 $cacheDir/*null*/, 
 																	 $cl);	
    return $loader;
 }, 																				 
- $config['sourceApiUrlInstaller'],
+ '03.webfan.de',
  4,			   
  'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloader.php',
  24 * 60 * 60,
@@ -2151,8 +2151,8 @@ if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\
 
  call_user_func(function($version,$workspace){
    if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class))return;
-   $loader = \frdl\implementation\psr4\RemoteAutoloader::class::getInstance($workspace, true, $version, false, false);
- }, 'latest', $config['sourceApiUrlInstaller']);
+   $loader = \frdl\implementation\psr4\RemoteAutoloader::class::getInstance($workspace, true, $version, true);
+ }, $version, $workspace);
 
 }	 
 	 
@@ -2170,9 +2170,6 @@ return [
   'workspace' =>$domain,
   'baseUrl' => 'https://'.$domain,
   'baseUrlInstaller' => false,
-  'sourceApiUrlInstaller' =>
-	//'03.webfan.de',
-	'https://api.webfan.de/v6/container/api/helper/codebase/get-php-class/webfan-website/stable/source/'.\PHP_VERSION.'/json/${class}',
   'ADMIN_EMAIL' => 'admin@'.$domain,
   'ADMIN_EMAIL_CONFIRMED' =>false,
   'NODE_PATH' => '/opt/plesk/node/12/bin/node',
@@ -2239,7 +2236,18 @@ if(false !==$webfile){
 	
 	die();
 }else{	
- // \Webfan\App\Shield::getInstance($this, \frdl\i::c(), false)->index('/');
+ 
+ try{
+   $f = 	 $this->get_file($this->document, '$HOME/apc_config.php', 'stub apc_config.php');
+   if($f)$config = $this->_run_php_1($f);	
+  if(!is_array($config) ){
+	$config=[];  
+  }
+ }catch(\Exception $e){
+		$config=[];  
+ }
+
+
      \Webfan\App\ShieldVeryDefaultIndexTemplate::renderDefault(
 $this,
 $_SERVER['SERVER_NAME'],
@@ -2247,7 +2255,8 @@ $_SERVER['SERVER_NAME'],
  $_SERVER['REQUEST_URI'], 
  $_SERVER['REQUEST_METHOD'], 
  $_SERVER['REMOTE_ADDR'], 
-(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR']
+(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR'],
+ $config		 
 );
 }
 
