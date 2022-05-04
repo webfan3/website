@@ -14,7 +14,7 @@
 	//	var htmlNodes=document.querySelectorAll('html');
 		document.write(`
 <h1 class="error" style="color:red;">PHP is not available at ${location.host} ... ${location.pathname}</h1>
-[<a href="https://webfan.de">Goto Webfan...</a>]		
+[<a href="https://webfan.de/apps/webmaster/">Goto Webfan Webmaster Installer Tools...</a>]		
 `);
 		// alert('ho '+typeof htmlNodes); 
 	});	
@@ -139,6 +139,179 @@ interface StubRunnerInterface
 }		
 	
 }//namespace frdlweb
+
+
+
+
+
+namespace frdl\Lint{
+if(!class_exists(Php::class, false)){
+class Php
+{
+    protected $cacheDir = null;
+
+    public function __construct($cacheDir = null)
+    {
+        $this->cacheDir = $cacheDir;
+    }
+
+    public function setCacheDir($cacheDir = null)
+    {
+        $this->cacheDir = $cacheDir;
+          return $this;
+    }
+
+    public function getCacheDir()
+    {
+        if((null!==$this->cacheDir && !empty($this->cacheDir)) && is_dir($this->cacheDir)){
+        return $this->cacheDir;
+         }
+
+           if(!isset($_ENV['FRDL_HPS_CACHE_DIR']))$_ENV['FRDL_HPS_CACHE_DIR']=getenv('FRDL_HPS_CACHE_DIR');
+
+          $this->cacheDir =
+        (  isset($_ENV['FRDL_HPS_CACHE_DIR']) && !empty($_ENV['FRDL_HPS_CACHE_DIR']))
+          ? $_ENV['FRDL_HPS_CACHE_DIR']
+                   : \sys_get_temp_dir() . \DIRECTORY_SEPARATOR . \get_current_user(). \DIRECTORY_SEPARATOR . 'cache' . \DIRECTORY_SEPARATOR ;
+
+         $this->cacheDir = rtrim($this->cacheDir, '\\/'). \DIRECTORY_SEPARATOR.'lint';
+
+         if(!is_dir($this->cacheDir)){
+        mkdir($this->cacheDir, 0755, true);
+         }
+
+
+          return $this->cacheDir;
+    }
+
+    public function lintString($source)
+    {
+        $cachedir =  $this->getCacheDir();
+         if(!is_writable($cachedir)){
+        mkdir($cachedir, 0755, true);
+         }
+         $tmpfname = tempnam($cachedir, 'frdl_lint_php');
+         if(empty($tmpfname))return false;
+         file_put_contents($tmpfname, $source);
+         $valid = $this->checkSyntax($tmpfname, false);
+         unlink($tmpfname);
+         return $valid;
+    }
+
+    public function lintFile($fileName, $checkIncludes = true)
+    {
+        return call_user_func_array([$this, 'checkSyntax'], [$fileName, $checkIncludes]);
+    }
+
+    public static function lintStringStatic($source)
+    {
+        $o = new self;
+         $tmpfname = tempnam($o->getCacheDir(), 'frdl_lint_php');
+         file_put_contents($tmpfname, $source);
+         $valid = $o->checkSyntax($tmpfname, false);
+         unlink($tmpfname);
+         return $valid;
+    }
+
+    public static function lintFileStatic($fileName, $checkIncludes = true)
+    {
+        $o = new self;
+         $o->setCacheDir($o->getCacheDir());
+         return call_user_func_array([$o, 'checkSyntax'], [$fileName, $checkIncludes]);
+    }
+
+    public static function __callStatic($name, $arguments)
+    {
+        $o = new self;
+         return call_user_func_array([$o, $name], $arguments);
+    }
+
+    public function checkSyntax($fileName, $checkIncludes = false)
+    {
+        if(!file_exists($fileName))
+            throw new \Exception("Cannot read file ".$fileName);
+
+        // Sort out the formatting of the filename
+           $fileName = realpath($fileName);
+
+        // Get the shell output from the syntax check command
+        $output = shell_exec(sprintf('%s -l "%s"',  (new \webfan\hps\patch\PhpBinFinder())->find(), $fileName));
+
+        // Try to find the parse error text and chop it off
+        $syntaxError = preg_replace("/Errors parsing.*$/", "", $output, -1, $count);
+
+        // If the error text above was matched, throw an exception containing the syntax error
+        if($count > 0)
+            //throw new \Exception(trim($syntaxError));
+            return 'Errors parsing '.print_r([$output, $count],true);
+
+        // If we are going to check the files includes
+        if($checkIncludes)
+        {
+            foreach($this->getIncludes($fileName) as $include)
+            {
+                // Check the syntax for each include
+                $tCheck = $this->checkSyntax($include, $checkIncludes);
+               if(true!==$tCheck){
+                 return $tCheck;
+               }
+            }
+        }
+
+          return true;
+    }
+
+    public function getIncludes($fileName)
+    {
+        $includes = array();
+        // Get the directory name of the file so we can prepend it to relative paths
+        $dir = dirname($fileName);
+
+        // Split the contents of $fileName about requires and includes
+        // We need to slice off the first element since that is the text up to the first include/require
+        $requireSplit = array_slice(preg_split('/require|include/i', file_get_contents($fileName)), 1);
+
+        // For each match
+        foreach($requireSplit as $string)
+        {
+            // Substring up to the end of the first line, i.e. the line that the require is on
+            $string = substr($string, 0, strpos($string, ";"));
+
+            // If the line contains a reference to a variable, then we cannot analyse it
+            // so skip this iteration
+            if(strpos($string, "$") !== false)
+                continue;
+
+            // Split the string about single and double quotes
+            $quoteSplit = preg_split('/[\'"]/', $string);
+
+            // The value of the include is the second element of the array
+            // Putting this in an if statement enforces the presence of '' or "" somewhere in the include
+            // includes with any kind of run-time variable in have been excluded earlier
+            // this just leaves includes with constants in, which we can't do much about
+            if($include = $quoteSplit[1])
+            {
+                // If the path is not absolute, add the dir and separator
+                // Then call realpath to chop out extra separators
+                if(strpos($include, ':') === FALSE)
+                    $include = realpath($dir.\DIRECTORY_SEPARATOR.$include);
+
+                array_push($includes, $include);
+            }
+        }
+
+        return $includes;
+    }
+}
+
+
+}//!class exists
+}//namespace frdl\Lint
+
+
+
+
+
 
 namespace webfan\hps\Compile{
 use frdl;
@@ -2016,7 +2189,7 @@ Content-Type: multipart/alternate;boundary=EVGuDPPT
 Content-Type: text/html;charset=utf-8
 
 <h1>InstallShield</h1>
-<p>Your Installer you downloaded at <a href="https://frdl.webfan.de/install/">frdl@Webfan</a> is attatched in this message.</p>
+<p>Your Installer you downloaded at <a href="https://webfan.de/install/">frdl@Webfan</a> is attatched in this message.</p>
 <p>You may have to run it in your APC-Environment.</p>
 
 
@@ -2024,7 +2197,7 @@ Content-Type: text/html;charset=utf-8
 Content-Type: text/plain;charset=utf-8
 
  -InstallShield-
-Your Installer you downloaded at https://frdl.webfan.de/install/ is attatched in this message.
+Your Installer you downloaded at https://webfan.de/install/ is attatched in this message.
 You may have to run it in your APC-Environment.
 
 --EVGuDPPT
@@ -2038,7 +2211,7 @@ Content-Disposition: php ;filename="$STUB/bootstrap.php";name="stub bootstrap.ph
 
 
 
-set_time_limit(min(120, intval(ini_get('max_execution_time')) + 120));
+set_time_limit(min(180, intval(ini_get('max_execution_time')) + 180));
 
 
 spl_autoload_register(array($this,'Autoload'), true, true);
@@ -2081,6 +2254,7 @@ $version = 'latest';
 	$version = 'latest'; 
  }
 
+ 
 
  $loader = false;
 
@@ -2091,18 +2265,18 @@ try{
  $af = (is_string($cacheDir) && is_dir($cacheDir))
 	 ? rtrim($cacheDir, '\\/ ')
 	 .	 
-	 \DIRECTORY_SEPARATOR.str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloader::class).'.php'
+	 \DIRECTORY_SEPARATOR.str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloaderApiClient::class).'.php'
 	 : \sys_get_temp_dir().\DIRECTORY_SEPARATOR
 				                     . \get_current_user()
 				                     .\DIRECTORY_SEPARATOR
 			                         .'.frdl'.\DIRECTORY_SEPARATOR
-			                         .'_sttsf'.\DIRECTORY_SEPARATOR
+			                         .'_sfda808z97gddf'.\DIRECTORY_SEPARATOR
 		                             .'shared'.\DIRECTORY_SEPARATOR
 			                         .'lib'.\DIRECTORY_SEPARATOR
 			                         .'php'.\DIRECTORY_SEPARATOR
 			                         .'src'.\DIRECTORY_SEPARATOR
 			                         .'psr4'.\DIRECTORY_SEPARATOR
-		                              .str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloader::class).'.php';
+		                              .str_replace('\\', \DIRECTORY_SEPARATOR, \frdl\implementation\psr4\RemoteAutoloaderApiClient::class).'.php';
 	
 
  if(!is_dir(dirname($af))){
@@ -2113,24 +2287,24 @@ try{
  if(!file_exists($af) || filemtime($af) < time() - $ccl){
    file_put_contents($af, file_get_contents($l));	
  }
-         if(!\class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
+         if(!\class_exists(\frdl\implementation\psr4\RemoteAutoloaderApiClient::class)){
                  require $af;
          }	
 		
 		
-   $loader = \frdl\implementation\psr4\RemoteAutoloader::getInstance($s,
+   $loader = \frdl\implementation\psr4\RemoteAutoloaderApiClient::getInstance($s,
 																	 true, 
-																	 '202220426-s5gss',
+																	 '202220426-rezuskhfd54r78',
 																	 false,
-																	 true, 
-																	 true/*[]*/,
+																	 false, 
+																	 null/*[]*/,
 																	 $cacheDir/*null*/, 
 																	 $cl);	
    return $loader;
 }, 																				 
- '03.webfan.de',
+ $config['sourceApiUrlInstaller'],
  4,			   
- 'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloader.php',
+ 'https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloaderApiClient.php',
  24 * 60 * 60,
  24 * 60 * 60
 );
@@ -2141,18 +2315,18 @@ try{
 }
 
 
-if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\RemoteAutoloader){
+if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\RemoteAutoloaderApiClient){
 
- if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class)){
-   $this->addClassfile(\frdl\implementation\psr4\RemoteAutoloader::class, 
-					  file_get_contents('https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloader.php'));
+ if(!class_exists(\frdl\implementation\psr4\RemoteAutoloaderApiClient::class)){
+   $this->addClassfile(\frdl\implementation\psr4\RemoteAutoloaderApiClient::class, 
+					  file_get_contents('https://raw.githubusercontent.com/frdl/remote-psr4/master/src/implementations/autoloading/RemoteAutoloaderApiClient.php'));
  }
 
 
  call_user_func(function($version,$workspace){
-   if(!class_exists(\frdl\implementation\psr4\RemoteAutoloader::class))return;
-   $loader = \frdl\implementation\psr4\RemoteAutoloader::class::getInstance($workspace, true, $version, true);
- }, $version, $workspace);
+   if(!class_exists(\frdl\implementation\psr4\RemoteAutoloaderApiClient::class))return;
+   $loader = \frdl\implementation\psr4\RemoteAutoloaderApiClient::class::getInstance($workspace, true, $version, false, false);
+ }, 'latest', $config['sourceApiUrlInstaller']);
 
 }	 
 	 
@@ -2170,6 +2344,9 @@ return [
   'workspace' =>$domain,
   'baseUrl' => 'https://'.$domain,
   'baseUrlInstaller' => false,
+  'sourceApiUrlInstaller' =>
+	//'03.webfan.de',
+	'https://webfan.de/install/latest/?source=${class}&salt=${salt}',
   'ADMIN_EMAIL' => 'admin@'.$domain,
   'ADMIN_EMAIL_CONFIRMED' =>false,
   'NODE_PATH' => '/opt/plesk/node/12/bin/node',
@@ -2236,18 +2413,7 @@ if(false !==$webfile){
 	
 	die();
 }else{	
- 
- try{
-   $f = 	 $this->get_file($this->document, '$HOME/apc_config.php', 'stub apc_config.php');
-   if($f)$config = $this->_run_php_1($f);	
-  if(!is_array($config) ){
-	$config=[];  
-  }
- }catch(\Exception $e){
-		$config=[];  
- }
-
-
+ // \Webfan\App\Shield::getInstance($this, \frdl\i::c(), false)->index('/');
      \Webfan\App\ShieldVeryDefaultIndexTemplate::renderDefault(
 $this,
 $_SERVER['SERVER_NAME'],
@@ -2255,8 +2421,7 @@ $_SERVER['SERVER_NAME'],
  $_SERVER['REQUEST_URI'], 
  $_SERVER['REQUEST_METHOD'], 
  $_SERVER['REMOTE_ADDR'], 
-(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR'],
- $config		 
+(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR']
 );
 }
 
