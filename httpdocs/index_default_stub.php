@@ -116,14 +116,9 @@ trait StaticClass
  * This file is part of the Nette Framework (https://nette.org)
  * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
  */
-
-//declare(strict_types=1);
-
 namespace Nette\Utils{
 
 use Nette;
-
-
 /**
  * Validation utilities.
  */
@@ -480,7 +475,6 @@ class Validators
 		return preg_match('#^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$#D', $value) === 1;
 	}
 }
-
 }
 
 
