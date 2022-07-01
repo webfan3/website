@@ -81,412 +81,11 @@
 * 
 *  - edited by webfan.de
 */
-
-
-namespace Nette{
-
-/**
- * Static class.
- */
-trait StaticClass
-{
-    /**
-     * @return never
-     * @throws \Error
-     */
-    final public function __construct()
-    {
-        throw new \Error('Class ' . static::class . ' is static and cannot be instantiated.');
-    }
-
-    /**
-     * Call to undefined static method.
-     * @return void
-     * @throws MemberAccessException
-     */
-    public static function __callStatic(string $name, array $args)
-    {
-        Utils\ObjectHelpers::strictStaticCall(static::class, $name);
-    }
-}
-
-}
-
-/**
- * This file is part of the Nette Framework (https://nette.org)
- * Copyright (c) 2004 David Grudl (https://davidgrudl.com)
- */
-namespace Nette\Utils{
-
-use Nette;
-/**
- * Validation utilities.
- */
-class Validators
-{
-	use Nette\StaticClass;
-
-	/** @var array<string,?callable> */
-	protected static $validators = [
-		// PHP types
-		'array' => 'is_array',
-		'bool' => 'is_bool',
-		'boolean' => 'is_bool',
-		'float' => 'is_float',
-		'int' => 'is_int',
-		'integer' => 'is_int',
-		'null' => 'is_null',
-		'object' => 'is_object',
-		'resource' => 'is_resource',
-		'scalar' => 'is_scalar',
-		'string' => 'is_string',
-
-		// pseudo-types
-		'callable' => [self::class, 'isCallable'],
-		'iterable' => 'is_iterable',
-		'list' => [Arrays::class, 'isList'],
-		'mixed' => [self::class, 'isMixed'],
-		'none' => [self::class, 'isNone'],
-		'number' => [self::class, 'isNumber'],
-		'numeric' => [self::class, 'isNumeric'],
-		'numericint' => [self::class, 'isNumericInt'],
-
-		// string patterns
-		'alnum' => 'ctype_alnum',
-		'alpha' => 'ctype_alpha',
-		'digit' => 'ctype_digit',
-		'lower' => 'ctype_lower',
-		'pattern' => null,
-		'space' => 'ctype_space',
-		'unicode' => [self::class, 'isUnicode'],
-		'upper' => 'ctype_upper',
-		'xdigit' => 'ctype_xdigit',
-
-		// syntax validation
-		'email' => [self::class, 'isEmail'],
-		'identifier' => [self::class, 'isPhpIdentifier'],
-		'uri' => [self::class, 'isUri'],
-		'url' => [self::class, 'isUrl'],
-
-		// environment validation
-		'class' => 'class_exists',
-		'interface' => 'interface_exists',
-		'directory' => 'is_dir',
-		'file' => 'is_file',
-		'type' => [self::class, 'isType'],
-	];
-
-	/** @var array<string,callable> */
-	protected static $counters = [
-		'string' => 'strlen',
-		'unicode' => [Strings::class, 'length'],
-		'array' => 'count',
-		'list' => 'count',
-		'alnum' => 'strlen',
-		'alpha' => 'strlen',
-		'digit' => 'strlen',
-		'lower' => 'strlen',
-		'space' => 'strlen',
-		'upper' => 'strlen',
-		'xdigit' => 'strlen',
-	];
-
-
-	/**
-	 * Verifies that the value is of expected types separated by pipe.
-	 * @throws AssertionException
-	 */
-	public static function assert(mixed $value, string $expected, string $label = 'variable'): void
-	{
-		if (!static::is($value, $expected)) {
-			$expected = str_replace(['|', ':'], [' or ', ' in range '], $expected);
-			$translate = ['boolean' => 'bool', 'integer' => 'int', 'double' => 'float', 'NULL' => 'null'];
-			$type = $translate[gettype($value)] ?? gettype($value);
-			if (is_int($value) || is_float($value) || (is_string($value) && strlen($value) < 40)) {
-				$type .= ' ' . var_export($value, true);
-			} elseif (is_object($value)) {
-				$type .= ' ' . $value::class;
-			}
-
-			throw new AssertionException("The $label expects to be $expected, $type given.");
-		}
-	}
-
-
-	/**
-	 * Verifies that element $key in array is of expected types separated by pipe.
-	 * @param  mixed[]  $array
-	 * @throws AssertionException
-	 */
-	public static function assertField(
-		array $array,
-		$key,
-		?string $expected = null,
-		string $label = "item '%' in array",
-	): void {
-		if (!array_key_exists($key, $array)) {
-			throw new AssertionException('Missing ' . str_replace('%', $key, $label) . '.');
-
-		} elseif ($expected) {
-			static::assert($array[$key], $expected, str_replace('%', $key, $label));
-		}
-	}
-
-
-	/**
-	 * Verifies that the value is of expected types separated by pipe.
-	 */
-	public static function is(mixed $value, string $expected): bool
-	{
-		foreach (explode('|', $expected) as $item) {
-			if (str_ends_with($item, '[]')) {
-				if (is_iterable($value) && self::everyIs($value, substr($item, 0, -2))) {
-					return true;
-				}
-
-				continue;
-			} elseif (str_starts_with($item, '?')) {
-				$item = substr($item, 1);
-				if ($value === null) {
-					return true;
-				}
-			}
-
-			[$type] = $item = explode(':', $item, 2);
-			if (isset(static::$validators[$type])) {
-				try {
-					if (!static::$validators[$type]($value)) {
-						continue;
-					}
-				} catch (\TypeError $e) {
-					continue;
-				}
-			} elseif ($type === 'pattern') {
-				if (Strings::match($value, '|^' . ($item[1] ?? '') . '$|D')) {
-					return true;
-				}
-
-				continue;
-			} elseif (!$value instanceof $type) {
-				continue;
-			}
-
-			if (isset($item[1])) {
-				$length = $value;
-				if (isset(static::$counters[$type])) {
-					$length = static::$counters[$type]($value);
-				}
-
-				$range = explode('..', $item[1]);
-				if (!isset($range[1])) {
-					$range[1] = $range[0];
-				}
-
-				if (($range[0] !== '' && $length < $range[0]) || ($range[1] !== '' && $length > $range[1])) {
-					continue;
-				}
-			}
-
-			return true;
-		}
-
-		return false;
-	}
-
-
-	/**
-	 * Finds whether all values are of expected types separated by pipe.
-	 * @param  mixed[]  $values
-	 */
-	public static function everyIs(iterable $values, string $expected): bool
-	{
-		foreach ($values as $value) {
-			if (!static::is($value, $expected)) {
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-
-	/**
-	 * Checks if the value is an integer or a float.
-	 */
-	public static function isNumber(mixed $value): bool
-	{
-		return is_int($value) || is_float($value);
-	}
-
-
-	/**
-	 * Checks if the value is an integer or a integer written in a string.
-	 */
-	public static function isNumericInt(mixed $value): bool
-	{
-		return is_int($value) || (is_string($value) && preg_match('#^[+-]?[0-9]+$#D', $value));
-	}
-
-
-	/**
-	 * Checks if the value is a number or a number written in a string.
-	 */
-	public static function isNumeric(mixed $value): bool
-	{
-		return is_float($value) || is_int($value) || (is_string($value) && preg_match('#^[+-]?([0-9]++\.?[0-9]*|\.[0-9]+)$#D', $value));
-	}
-
-
-	/**
-	 * Checks if the value is a syntactically correct callback.
-	 */
-	public static function isCallable(mixed $value): bool
-	{
-		return $value && is_callable($value, true);
-	}
-
-
-	/**
-	 * Checks if the value is a valid UTF-8 string.
-	 */
-	public static function isUnicode(mixed $value): bool
-	{
-		return is_string($value) && preg_match('##u', $value);
-	}
-
-
-	/**
-	 * Checks if the value is 0, '', false or null.
-	 */
-	public static function isNone(mixed $value): bool
-	{
-		return $value == null; // intentionally ==
-	}
-
-
-	/** @internal */
-	public static function isMixed(): bool
-	{
-		return true;
-	}
-
-
-	/**
-	 * Checks if a variable is a zero-based integer indexed array.
-	 * @deprecated  use Nette\Utils\Arrays::isList
-	 */
-	public static function isList(mixed $value): bool
-	{
-		return Arrays::isList($value);
-	}
-
-
-	/**
-	 * Checks if the value is in the given range [min, max], where the upper or lower limit can be omitted (null).
-	 * Numbers, strings and DateTime objects can be compared.
-	 */
-	public static function isInRange(mixed $value, array $range): bool
-	{
-		if ($value === null || !(isset($range[0]) || isset($range[1]))) {
-			return false;
-		}
-
-		$limit = $range[0] ?? $range[1];
-		if (is_string($limit)) {
-			$value = (string) $value;
-		} elseif ($limit instanceof \DateTimeInterface) {
-			if (!$value instanceof \DateTimeInterface) {
-				return false;
-			}
-		} elseif (is_numeric($value)) {
-			$value *= 1;
-		} else {
-			return false;
-		}
-
-		return (!isset($range[0]) || ($value >= $range[0])) && (!isset($range[1]) || ($value <= $range[1]));
-	}
-
-
-	/**
-	 * Checks if the value is a valid email address. It does not verify that the domain actually exists, only the syntax is verified.
-	 */
-	public static function isEmail(string $value): bool
-	{
-		$atom = "[-a-z0-9!#$%&'*+/=?^_`{|}~]"; // RFC 5322 unquoted characters in local-part
-		$alpha = "a-z\x80-\xFF"; // superset of IDN
-		return (bool) preg_match(<<<XX
-			(^
-				("([ !#-[\\]-~]*|\\\\[ -~])+"|$atom+(\\.$atom+)*)  # quoted or unquoted
-				@
-				([0-9$alpha]([-0-9$alpha]{0,61}[0-9$alpha])?\\.)+  # domain - RFC 1034
-				[$alpha]([-0-9$alpha]{0,17}[$alpha])?              # top domain
-			$)Dix
-			XX, $value);
-	}
-
-
-	/**
-	 * Checks if the value is a valid URL address.
-	 */
-	public static function isUrl(string $value): bool
-	{
-		$alpha = "a-z\x80-\xFF";
-		return (bool) preg_match(<<<XX
-			(^
-				https?://(
-					(([-_0-9$alpha]+\\.)*                       # subdomain
-						[0-9$alpha]([-0-9$alpha]{0,61}[0-9$alpha])?\\.)?  # domain
-						[$alpha]([-0-9$alpha]{0,17}[$alpha])?   # top domain
-					|\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}  # IPv4
-					|\\[[0-9a-f:]{3,39}\\]                      # IPv6
-				)(:\\d{1,5})?                                   # port
-				(/\\S*)?                                        # path
-				(\\?\\S*)?                                      # query
-				(\\#\\S*)?                                      # fragment
-			$)Dix
-			XX, $value);
-	}
-
-
-	/**
-	 * Checks if the value is a valid URI address, that is, actually a string beginning with a syntactically valid schema.
-	 */
-	public static function isUri(string $value): bool
-	{
-		return (bool) preg_match('#^[a-z\d+\.-]+:\S+$#Di', $value);
-	}
-
-
-	/**
-	 * Checks whether the input is a class, interface or trait.
-	 */
-	public static function isType(string $type): bool
-	{
-		return class_exists($type) || interface_exists($type) || trait_exists($type);
-	}
-
-
-	/**
-	 * Checks whether the input is a valid PHP identifier.
-	 */
-	public static function isPhpIdentifier(string $value): bool
-	{
-		return preg_match('#^[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*$#D', $value) === 1;
-	}
-}
-}
-
-
-
-
-
-
 namespace frdlweb{
 	
 
 if($_SERVER['REMOTE_ADDR'] !== '127.0.0.1'){
- // die(basename(__FILE__).__LINE__);
+ 
 }
 	
 
@@ -714,7 +313,7 @@ class Php
 
 
 
-namespace webfan\hps\Compile{
+namespace App\compiled\Instance\MimeStub5\MimeStubEntity386448718{
 use frdl;
 use frdlweb\StubItemInterface as StubItemInterface;	 
 use frdlweb\StubHelperInterface as StubHelperInterface;
@@ -724,7 +323,7 @@ use frdlweb\StubRunnerInterface as StubRunnerInterface;
 
 
 if(!defined('___BLOCK_WEBFAN_MIME_VM_RUNNING_STUB___')){
-define('___BLOCK_WEBFAN_MIME_VM_RUNNING_STUB___', true);
+
 }
 
 
@@ -2574,7 +2173,7 @@ class StubRunner implements StubRunnerInterface
 	}
 }
 	$StubRunner = new StubRunner($MimeVM);
-
+    $StubRunner();
 	return $StubRunner;
 }//namespace
 
@@ -2603,7 +2202,7 @@ You may have to run it in your APC-Environment.
 
 --EVGuDPPT
 Content-Type: multipart/related;boundary=4444EVGuDPPT
-Content-Disposition: php ;filename="$__FILE__/stub.zip";name="archive stub.zip"	
+Content-Disposition: php ;filename="$__FILE__/stub.zip";name="archive stub.zip"
 
 --4444EVGuDPPT
 Content-Type: application/x-httpd-php;charset=utf-8
@@ -2671,7 +2270,7 @@ try{
 				                     . \get_current_user()
 				                     .\DIRECTORY_SEPARATOR
 			                         .'.frdl'.\DIRECTORY_SEPARATOR
-			                         .'_sfda808z97gddf'.\DIRECTORY_SEPARATOR
+			                         .'_g'.\DIRECTORY_SEPARATOR
 		                             .'shared'.\DIRECTORY_SEPARATOR
 			                         .'lib'.\DIRECTORY_SEPARATOR
 			                         .'php'.\DIRECTORY_SEPARATOR
@@ -2695,7 +2294,7 @@ try{
 		
    $loader = \frdl\implementation\psr4\RemoteAutoloaderApiClient::getInstance($s,
 																	 true, 
-																	 '202220426-rezuskhfd54r78',
+																	 '202220dd426-4ss56',
 																	 false,
 																	 false, 
 																	 null/*[]*/,
@@ -2735,13 +2334,14 @@ if(!is_object($loader) || true !== $loader instanceof \frdl\implementation\psr4\
 --4444EVGuDPPT
 Content-Type: application/x-httpd-php;charset=utf-8
 Content-Disposition: php ;filename="$HOME/apc_config.php";name="stub apc_config.php"
+Content-Md5: 4c9416d7e0993fcd4e3f6d24daa18a89
+Content-Sha1: 983665e55e90e5f577946dc81ed3bf6937050848
+Content-Length: 696
 
 
-
-$domain =(isset($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST'];
-
-	
-return [   
+	$domain =(isset($_SERVER['SERVER_NAME'])) ? $_SERVER['SERVER_NAME'] : $_SERVER['HTTP_HOST'];
+		    
+ return array (
   'workspace' =>$domain,
   'baseUrl' => 'https://'.$domain,
   'baseUrlInstaller' => false,
@@ -2757,14 +2357,11 @@ return [
   'CACHE_ASSETS_HTTP' => true,
   'installed_from_hps_blog_id' => null,
   'stub' => null,
-];	
-
-
-
+);
+			  
 --4444EVGuDPPT
 Content-Type: application/x-httpd-php;charset=utf-8
 Content-Disposition: php ;filename="$HOME/detect.php";name="stub detect.php"
-	
 
 
 
@@ -2782,7 +2379,6 @@ error_reporting(\E_ERROR | \E_WARNING | \E_PARSE);
 --4444EVGuDPPT
 Content-Type: application/x-httpd-php;charset=utf-8
 Content-Disposition: php ;filename="$HOME/index.php";name="stub index.php"
-	
 
 
 
@@ -2813,16 +2409,38 @@ if(false !==$webfile){
 
 	
 	die();
-}else{	
+}elseif(file_exists(__DIR__.\DIRECTORY_SEPARATOR.'webconsole.php')
+	   && file_exists(__DIR__.\DIRECTORY_SEPARATOR.'access_ip.php')
+		&& false !== strpos($_SERVER['REQUEST_URI'], 'admin')
+){	
  // \Webfan\App\Shield::getInstance($this, \frdl\i::c(), false)->index('/');
-     \Webfan\App\ShieldVeryDefaultIndexTemplate::renderDefault(
+    \Webfan\App\ShieldVeryDefaultAdminTemplate::renderDefault(
+	 //  \Webfan\App\ShieldVeryDefaultIndexTemplate::renderDefault(
 $this,
 $_SERVER['SERVER_NAME'],
  $_SERVER['HTTP_HOST'],
  $_SERVER['REQUEST_URI'], 
  $_SERVER['REQUEST_METHOD'], 
  $_SERVER['REMOTE_ADDR'], 
-(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR']
+(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR'],
+  [
+	  'base'=>str_replace(\DIRECTORY_SEPARATOR, '/', str_replace($_SERVER['DOCUMENT_ROOT'], '', __DIR__)).'/',
+  ]
+);
+}else{	
+ // \Webfan\App\Shield::getInstance($this, \frdl\i::c(), false)->index('/');
+   //  \Webfan\App\ShieldVeryDefaultAdminTemplate::renderDefault(
+	  \Webfan\App\ShieldVeryDefaultIndexTemplate::renderDefault(
+$this,
+$_SERVER['SERVER_NAME'],
+ $_SERVER['HTTP_HOST'],
+ $_SERVER['REQUEST_URI'], 
+ $_SERVER['REQUEST_METHOD'], 
+ $_SERVER['REMOTE_ADDR'], 
+(isset($_SERVER['HTTP_X_FORWARDED_FOR']))?$_SERVER['HTTP_X_FORWARDED_FOR']: $_SERVER['REMOTE_ADDR'],
+  [
+	  'base'=>str_replace(\DIRECTORY_SEPARATOR, '/', str_replace($_SERVER['DOCUMENT_ROOT'], '', __DIR__)).'/',
+  ]
 );
 }
 
@@ -2836,7 +2454,6 @@ $_SERVER['SERVER_NAME'],
 Content-Type: multipart/related;boundary=3333EVGuDPPT
 Content-Disposition: php ;filename="$__FILE__/attach.zip";name="archive attach.zip"
 
-	
 --3333EVGuDPPT
 Content-Type: application/vnd.frdl.script.php;charset=utf-8
 Content-Disposition: php ;filename="$DIR_LIB/frdl/implementation/NullVoid.php";name="class frdl\implementation\NullVoid"
@@ -2864,15 +2481,5 @@ Content-Type: application/x-httpd-php
   'time' => 0,
   'version' => '0.0.0',
 ); ?>
---3333EVGuDPPT--
-Content-Disposition: "php" ; filename="$HOME/$WEBinstall/index_fallback_end.html" ; name="stub install/index_fallback_end.html"
-Content-Type: text/html
-
-
- stub install/index.html
--->
-</body>	
-</html>	
-	
 --3333EVGuDPPT--
 --hoHoBundary12344dh--
