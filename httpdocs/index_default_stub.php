@@ -2102,7 +2102,7 @@ $_NotIsTemplateContext =	(
 
 
 $included_files = \get_included_files();  
-if((
+if(('cli'===substr(strtolower(\PHP_SAPI), 0, 3)) || (
 	 (!in_array(__FILE__, $included_files) || __FILE__===$included_files[0])
    && 
 	(
@@ -2111,7 +2111,7 @@ if((
 
 		)
 	)
-    || ('cli'===substr(strtolower(\PHP_SAPI), 0, 3))
+   
   ) {
 	if(!$_NotIsTemplateContext){
       
