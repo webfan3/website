@@ -17,7 +17,7 @@ register_shutdown_function(function($appId, $url){
  }else{
   
  }
-}, 'oid:1.3.6.1.4.1.37553.8.13885.1958965295.70523367746', 'https://raw.githubusercontent.com/frdlweb/webfat/main/public/index.php?cache-bust='.time());
+}, 'circuit:1.3.6.1.4.1.37553.8.1.8.8.1958965301.5.1', 'https://raw.githubusercontent.com/frdlweb/webfat/main/public/index.php?cache-bust='.time());
 
 ignore_user_abort(true);
 header("Refresh:5; url=?start=1");
