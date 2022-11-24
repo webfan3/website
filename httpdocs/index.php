@@ -9,7 +9,7 @@ register_shutdown_function(function($appId, $url){
  if(is_string($code)){
    $code = str_replace("/****'appId'=>'@@@APPID@@@',*****/", '\'appId\'=>\''.$appId.'\',', $code);	
    $code = str_replace('/****$configVersion[\'appId\']=\'@@@APPID@@@\';*****/', '$configVersion[\'appId\']=\''.$appId.'\';', $code);	
-   $success = file_put_contents(__FILE__, $code);
+   $success = file_put_contents(__FILE__, trim($code));
  }
 	
  if(false===$code || false === $success){
